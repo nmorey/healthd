@@ -1,0 +1,14 @@
+[Unit]
+Description=RRD Health Monitor
+Wants=network-online.target local-fs.target
+After=network-online.target local-fs.target
+
+[Service]
+ExecStart=/usr/bin/healthd-graph
+PIDFile=/run/rrd.pid
+Restart=always
+RestartSec=1800
+
+[Install]
+WantedBy=multi-user.target
+

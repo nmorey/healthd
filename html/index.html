@@ -1,0 +1,108 @@
+<html>
+	<head>
+		<title>Healthd report</title>
+		<link rel="stylesheet" href="style.css">
+		<link rel="icon" type="image/png" href="favicon.png"> 
+		<meta http-equiv="refresh" content="300">
+		<script src="jquery.js"></script> 
+		<script> 
+			$(function(){
+			  $("#includedMDADM").load("mdadm.html"); 
+			  $("#includedUPS").load("ups.html"); 
+			  $("#includedSYS").load("sys-info.html"); 
+			  $("#includedPS").load("ps.html"); 
+			  $("#includedSYSTEMCTL").load("systemctl.html"); 
+			});
+			function reloadPage(){
+				location.reload(true);
+			}
+		</script> 
+	</head>
+	<body>
+		<div id="top" />
+		<div id="toc_container">
+			<h2>ToC</h2>
+			<ul class="toc_list">
+				<li><a href="#sysinfo">System Infos</a></li>
+				<li><a href="#cpu_activity">CPU Activity</a></li>
+				<li><a href="#network_activity">Network Activity</a></li>
+				<li><a href="#hdd_activity">HDD Activity</a></li>
+				<li><a href="#temps">Temperatures</a></li>
+				<li><a href="#mdadm">MDADM Status</a></li>
+				<li><a href="#ups">UPS Status</a></li>
+				<li><a href="#ps">Process Status</a></li>
+				<li><a href="#systemctl">systemctl</a></li>
+				<ul>
+					<li><a href="#systemctl-running">systemctl running</a></li>
+					<li><a href="#systemctl-failed">systemctl failed</a></li>
+				</ul>
+				<li><button type="button" onclick="reloadPage();">Reload page</button></li>
+			</ul>
+		</div>
+
+		<div id="main" style='width: 80%'>
+			<h3 id="sysinfo">System Infos</h3>
+			<div id="includedSYS"></div>
+
+			<h3 id="cpu_activity">CPU activity</h3>
+			<div>
+				<table border="0">
+					<tr><td colspan="2"><a href="cpu-hour-big.png"><img border="0" src="cpu-hour.png" /></a></td></tr>
+					<tr>
+						<td><a href="cpu-day-big.png"><img border="0" src="cpu-day.png" /></a></td>
+						<td><a href="cpu-week-big.png"><img border="0" src="cpu-week.png" /></a></td>
+					</tr>
+					<tr><td colspan="2"><a href="cpu-long-big.png"><img border="0" src="cpu-long.png" /></a></td></tr>
+				</table>
+			</div>
+
+			<h3 id="network_activity">Network activity</h3>
+			<div>
+				<table border="0">
+					<tr><td colspan="2"><a href="net-hour-big.png"><img border="0" src="net-hour.png" /></a></td></tr>
+					<tr>
+						<td><a href="net-day-big.png"><img border="0" src="net-day.png" /></a></td>
+						<td><a href="net-week-big.png"><img border="0" src="net-week.png" /></a></td>
+					</tr>
+					<tr><td colspan="2"><a href="net-long-big.png"><img border="0" src="net-long.png" /></a></td></tr>
+				</table>
+			</div>
+
+			<h3 id="hdd_activity">HDD activity</h3>
+			<div>
+				<table border="0">
+					<tr><td colspan="2"><a href="hdd-hour-big.png"><img border="0" src="hdd-hour.png" /></a></td></tr>
+					<tr>
+						<td><a href="hdd-day-big.png"><img border="0" src="hdd-day.png" /></a></td>
+						<td><a href="hdd-week-big.png"><img border="0" src="hdd-week.png" /></a></td>
+					</tr>
+					<tr><td colspan="2"><a href="hdd-long-big.png"><img border="0" src="hdd-long.png" /></a></td></tr>
+				</table>
+			</div>
+
+			<h3 id="temps">Temps</h3>
+			<div>
+				<table border="0">
+					<tr><td colspan="2"><a href="temp-hour-big.png"><img border="0" src="temp-hour.png" /></a></td></tr>
+					<tr>
+						<td><a href="temp-day-big.png"><img border="0" src="temp-day.png" /></a></td>
+						<td><a href="temp-week-big.png"><img border="0" src="temp-week.png" /></a></td>
+					</tr>
+					<tr><td colspan="2"><a href="temp-long-big.png"><img border="0" src="temp-long.png" /></a></td></tr>
+				</table>
+			</div>
+
+			<h3 id="mdadm">MDADM</h3>
+			<div id="includedMDADM"></div>
+
+			<h3 id="ups">UPS</h3>
+			<div id="includedUPS"></div>
+
+			<h3 id="ps">Process Status</h3>
+			<div id="includedPS"></div>
+
+			<h3 id="systemctl">Systemctl</h3>
+			<div id="includedSYSTEMCTL"></div>
+		</div>
+	</body>
+</html>

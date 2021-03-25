@@ -1,0 +1,24 @@
+# -- data transfer counters: entries like hda, sda, md0, eth0
+#USAGESTATS="sda eno1"
+
+# -- temperature values: internal name;sensor name;description+for+graph
+#HEALTHSTATS="CPU0;Package+id+0;Processor+Temp sda;HDD0"
+
+# Raid to monitor
+#MDSTATS="md1"
+
+# UPS to monitor
+#UPSSTATS="myups@localhost"
+
+# Email for temperature alert notifications
+ADMIN_EMAIL=""
+
+# Colors for graphs
+COLORS="#00FF00C0;#008000C0;#FF0000C0;#800000C0;#0000FFC0;#000080C0;#00FFFFC0;#008080C0;#FF00FFC0;#800080C0;#B0B000C0;#808000C0"
+
+# -- Web interface directory
+WEBDIR="/var/lib/healthd/html/"
+
+# Healthd RRD storage
+HEALTHDIR="/var/lib/healthd/rrd/"
+

@@ -1,0 +1,287 @@
+#!/bin/bash
+
+if [ ! -f /etc/sysconfig/healthd ]; then
+	echo "Missing /etc/sysconfig/healthd"
+	exit 1
+fi
+. /etc/sysconfig/healthd
+
+BINDIR=/usr/bin
+UPDATE_SCRIPT=$BINDIR/healthd-monitor
+GRAPH_SCRIPT=$BINDIR/healthd-graph
+USAGEFILE="$HEALTHDIR/usage.rrd"
+HEALTHFILE="$HEALTHFILE/health.rrd"
+
+#------------------------------ NO SERVICEABLE PARTS BELOW -------------------------------
+
+# "parse" separated values
+function getOne() {
+  echo $2 | {
+    i=$1
+    while [ $i -gt 0 ] ; do i=$((i-1)) ; read -d \; ; done
+    echo $REPLY
+  }
+}
+
+# create and update command beginnings
+CREATEUSAGE="rrdtool create $USAGEFILE --step 15"
+CREATEHEALTH="rrdtool create $HEALTHFILE --step 15"
+UPDATEUSAGEC="rrdtool update $USAGEFILE \"N"
+UPDATEHEALTHC="rrdtool update $HEALTHFILE \"N"
+UCOLIDXH=1
+UCOLIDXN=1
+TCOLIDX=1
+
+
+# usage
+for i in $USAGESTATS; do
+    CREATEUSAGE="$CREATEUSAGE DS:${i}r:COUNTER:15:U:U DS:${i}w:COUNTER:15:U:U"
+
+    if echo ${i} | egrep "hd.+|md.+|sd.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
+  VAL_${i}r=\`${BINDIR}/hddstat ${i} 3\`
+  VAL_${i}w=\`${BINDIR}/hddstat ${i} 7\`" ;
+      GRAPHHDD="$GRAPHHDD \\
+    DEF:${i}r_s=usage.rrd:${i}r:AVERAGE \\
+    DEF:${i}w_s=usage.rrd:${i}w:AVERAGE \\
+    CDEF:${i}r=${i}r_s,512,* \\
+    CDEF:${i}w=${i}w_s,512,* \\
+    LINE2:${i}r`getOne $UCOLIDXH $COLORS`:\"${i} read\" \\
+    LINE2:${i}w`getOne $((UCOLIDXH+1)) $COLORS`:\"${i} write\" " ;
+      UCOLIDXH=$((UCOLIDXH+2)) ; fi
+    if echo ${i} | egrep "eth.+|eno.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
+  VAL_${i}r=\`${BINDIR}/netstats ${i} RX\`
+  VAL_${i}w=\`${BINDIR}/netstats ${i} TX\`" ;
+      GRAPHNET="$GRAPHNET \\
+    DEF:${i}r=usage.rrd:${i}r:AVERAGE \\
+    DEF:${i}w=usage.rrd:${i}w:AVERAGE \\
+    LINE2:${i}r`getOne $UCOLIDXN $COLORS`:\"${i} recv\" \\
+    LINE2:${i}w`getOne $((UCOLIDXN+1)) $COLORS`:\"${i} send\" " ;
+      UCOLIDXN=$((UCOLIDXN+2)) ; fi
+
+    UPDATEUSAGEC="$UPDATEUSAGEC:\${VAL_${i}r:-U}:\${VAL_${i}w:-U}"
+done
+
+# health
+for i in $HEALTHSTATS; do
+    RRDID=`getOne 1 "${i}"`
+    SENSID=`getOne 2 "${i}" | sed -e 's/+/ /g'`
+    GRNAME=`getOne 3 "${i}"`
+    GRNAME=${GRNAME//+/ }
+
+    CREATEHEALTH="$CREATEHEALTH DS:${RRDID}:GAUGE:15:0:120"
+
+    if echo ${RRDID} | egrep "hd.+|sd.+" > /dev/null ; then
+        UPDATEHEALTH="$UPDATEHEALTH
+        TEMP_${RRDID}=\`${BINDIR}/hddtemp /dev/${RRDID}\`"
+        GRNAME="${SENSID}"
+    else
+         UPDATEHEALTH="$UPDATEHEALTH
+         TEMP_${RRDID}=\`${BINDIR}/senstemp "${SENSID}"\`"
+    fi
+
+    GRAPHTEMP="$GRAPHTEMP \\
+    DEF:${RRDID}=health.rrd:${RRDID}:AVERAGE \\
+    LINE2:${RRDID}`getOne $TCOLIDX $TCOLORS`:\"${GRNAME}\" "
+    TCOLIDX=$((TCOLIDX+1))
+
+    UPDATEHEALTHC="$UPDATEHEALTHC:\${TEMP_${RRDID}:-U}"
+done
+# assemble commands
+CREATEUSAGE="$CREATEUSAGE DS:cpu:GAUGE:15:0:100 DS:load:GAUGE:15:0:U RRA:AVERAGE:0.5:240:1440 RRA:AVERAGE:0.5:4:1440"
+CREATEHEALTH="$CREATEHEALTH RRA:AVERAGE:0.5:240:1440 RRA:AVERAGE:0.5:4:1440"
+UPDATEUSAGEC="$UPDATEUSAGEC:\`${BINDIR}/cpustat 10 8\`:\`${BINDIR}/cpustat\`\""
+UPDATEHEALTHC="$UPDATEHEALTHC\""
+
+# create RRD files
+if [ ! -e $USAGEFILE ] ; then
+    $CREATEUSAGE && echo "RRD file $USAGEFILE successfully created" ;
+  else
+    echo "Not creating RRD file $USAGEFILE because it exists already!" ;
+fi
+if [ ! -e $HEALTHFILE ] ; then
+    $CREATEHEALTH && echo "RRD file $HEALTHFILE successfully created" ;
+  else
+    echo "Not creating RRD file $HEALTHFILE because it exists already!" ;
+fi
+
+# create update shell file
+cat <<EOF > $UPDATE_SCRIPT
+#!/bin/sh
+
+PIDFILE=/run/rrd.pid
+
+[ -e \$PIDFILE ] && kill -9 \`cat \$PIDFILE\`
+
+echo -n \$\$ > $PIDFILE
+
+while true; 
+  { $UPDATEUSAGE
+  $UPDATEUSAGEC
+  } &
+  sleep 7;
+  { $UPDATEHEALTH
+  $UPDATEHEALTHC
+  } &
+  sleep 7;
+} done
+EOF
+chmod 755 $UPDATE_SCRIPT
+echo "Created rrdupdate.sh in ${BINDIR}"
+
+# create graph creation shell file
+cat <<EOF  > $GRAPH_SCRIPT
+#!/bin/bash
+function tempg {
+  rrdtool graph $WEBDIR/\$1.png \$5 \\
+    --width \$3 \\
+    --height \$4 \\
+    --start now-\$2 \\
+    --vertical-label "C" \\
+    --title "System Temps: \$2" \\
+    --alt-autoscale \\
+	$GRAPHTEMP
+}
+
+function hddg {
+  rrdtool graph $WEBDIR/\$1.png \$5 \\
+    --width \$3 \\
+    --height \$4 \\
+    --start now-\$2 \\
+    --title "HDD Throughput: \$2" \\
+    --vertical-label "bytes/s" \\
+    --logarithmic \\
+    --units=si \\
+    --lower-limit 1000 \\
+    --rigid \\
+	$GRAPHHDD
+}
+
+function netg {
+  rrdtool graph $WEBDIR/\$1.png \$5 \\
+    --width \$3 \\
+    --height \$4 \\
+    --start now-\$2 \\
+    --title "Network Throughput" \\
+    --vertical-label "bytes/s" \\
+    --logarithmic \\
+    --units=si \\
+    --lower-limit 1000 \\
+    --rigid \\
+	$GRAPHNET
+}
+
+function cpug {
+  rrdtool graph $WEBDIR/\$1.png \$5 \\
+    --width \$3 \\
+    --height \$4 \\
+    --start now-\$2 \\
+    --title "CPU usage: \$2" \\
+    --vertical-label "load" \\
+    DEF:cpu=usage.rrd:cpu:AVERAGE \\
+    DEF:load=usage.rrd:load:AVERAGE \\
+    LINE2:cpu#00000080:"CPU usage" \\
+    LINE2:load#FF0000C0:"CPU load"
+}
+
+function dograph {
+    echo \$1
+    \$1g \$1-hour-big 1h 1200 500
+    \$1g \$1-hour 1h 1000 200 --slope-mode
+    \$1g \$1-day-big 1d 1200 500
+    \$1g \$1-day 1d 450 120 --slope-mode
+    \$1g \$1-week-big 7d 1200 500
+    \$1g \$1-week 7d 450 120 --slope-mode
+    \$1g \$1-long-big 50d 1200 500
+    \$1g \$1-long 50d 1000 120 -Eg
+}
+
+dograph temp > /dev/null
+dograph hdd > /dev/null
+dograph cpu > /dev/null
+dograph net > /dev/null
+
+mv ${HEALTHDIR}/*.png $WEBDIR
+EOF
+
+if [ "$MDSTATS" != "" ]; then
+	cat <<EOF >> $GRAPH_SCRIPT
+(
+  echo '<pre><code>'
+  echo -e "\n\n/proc/mdstat:"
+  cat /proc/mdstat
+EOF
+
+	for md in $MDSTATS; do
+		echo "  mdadm --detail /dev/$md" >> $GRAPH_SCRIPT
+	done
+
+	cat <<EOF >> $GRAPH_SCRIPT
+  echo '</code></pre>'
+) > $WEBDIR/mdadm.html
+EOF
+fi
+
+if [ "$UPSSTATS" != "" ]; then
+	cat <<EOF >> $GRAPH_SCRIPT
+(
+  echo '<pre><code>'
+EOF
+
+	for ups in $UPSSTATS; do
+			cat <<EOF >> $GRAPH_SCRIPT
+  <b>$ups</b>
+  upsc $ups
+EOF
+	done
+	cat <<EOF >> $GRAPH_SCRIPT
+  echo '</code></pre>'
+) > $WEBDIR/ups.html
+EOF
+fi
+
+cat <<EOF >> $GRAPH_SCRIPT
+(
+  echo '<pre><code>'
+  echo '<b>Hostname</b>'
+  hostname
+
+  echo -e "\n<b>Uname</b>"
+  uname -a
+
+  echo -e '\n<b>Date</b>'
+  date -R
+
+  echo -e '\n<b>Uptime</b>'
+  uptime
+
+  echo -e "\n<b>Free Memory</b>"
+  free
+
+  echo -e "\n\n<b>OS-release</b>"
+  cat /etc/os-release
+  echo '</code></pre>'
+) > $HEALTHDIR/sys-info.html
+
+(
+  echo '<pre><code>'
+  ps aux --forest | sed -e 's/</\&#60;/g' -e 's/>/\&#62;/g'
+  echo '</code></pre>'
+) > $HEALTHDIR/ps.html
+
+(
+  echo '<h2 id="systemctl-running">systemctl --state=running</h2>'
+  echo '<pre><code>'
+  systemctl --state=running
+  echo -e "\n\n"
+  echo '</code></pre>'
+
+  echo '<h2 id="systemctl-failed">systemctl --state=failed</h2>'
+  echo '<pre><code>'
+  systemctl --state=failed
+  echo -e "\n\n"
+  echo '</code></pre>'
+) > $HEALTHDIR/systemctl.html
+EOF
+
+chmod 755 $GRAPH_SCRIPT
+echo "Created mkgraphs.sh"

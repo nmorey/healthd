@@ -1,0 +1,3 @@
+#!/bin/sh
+
+grep "$1 " /proc/diskstats | sed -re "s/\s+/ /g" | sed -re "s/( \w+){2}( \w+){$2} (\w+) .*/\3/g"
