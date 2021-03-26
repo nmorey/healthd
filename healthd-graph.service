@@ -2,5 +2,5 @@
 Description=RRD Health Monitor - Graph generation
 
 [Service]
-ExecStart=/usr/bin/heathd-graph
+ExecStart=/usr/bin/healthd-graph
 

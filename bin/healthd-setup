@@ -114,11 +114,9 @@ cat <<EOF > $UPDATE_SCRIPT
 
 PIDFILE=/run/rrd.pid
 
-[ -e \$PIDFILE ] && kill -9 \`cat \$PIDFILE\`
+echo -n \$\$ > \$PIDFILE
 
-echo -n \$\$ > $PIDFILE
-
-while true; 
+while true; do
   { $UPDATEUSAGE
   $UPDATEUSAGEC
   } &
@@ -127,7 +125,7 @@ while true;
   $UPDATEHEALTHC
   } &
   sleep 7;
-} done
+done
 EOF
 chmod 755 $UPDATE_SCRIPT
 echo "Created $UPDATE_SCRIPT"
@@ -199,12 +197,13 @@ function dograph {
     \$1g \$1-long 50d 1000 120 -Eg
 }
 
+cd ${HEALTHDIR}
+
 dograph temp > /dev/null
 dograph hdd > /dev/null
 dograph cpu > /dev/null
 dograph net > /dev/null
 
-mv ${HEALTHDIR}/*.png $WEBDIR
 EOF
 
 if [ "$MDSTATS" != "" ]; then
@@ -264,13 +263,13 @@ cat <<EOF >> $GRAPH_SCRIPT
   echo -e "\n\n<b>OS-release</b>"
   cat /etc/os-release
   echo '</code></pre>'
-) > $HEALTHDIR/sys-info.html
+) > $WEBDIR/sys-info.html
 
 (
   echo '<pre><code>'
   ps aux --forest | sed -e 's/</\&#60;/g' -e 's/>/\&#62;/g'
   echo '</code></pre>'
-) > $HEALTHDIR/ps.html
+) > $WEBDIR/ps.html
 
 (
   echo '<h2 id="systemctl-running">systemctl --state=running</h2>'
@@ -284,7 +283,7 @@ cat <<EOF >> $GRAPH_SCRIPT
   systemctl --state=failed
   echo -e "\n\n"
   echo '</code></pre>'
-) > $HEALTHDIR/systemctl.html
+) > $WEBDIR/systemctl.html
 EOF
 
 chmod 755 $GRAPH_SCRIPT
