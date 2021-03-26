@@ -93,6 +93,10 @@ UPDATEUSAGEC="$UPDATEUSAGEC:\`${BINDIR}/cpustat 10 8\`:\`${BINDIR}/cpustat\`\""
 UPDATEHEALTHC="$UPDATEHEALTHC\""
 
 # create RRD files
+if [ ! -d $HEALTHDIR ]; then
+	echo "$HEALTHDIR is missing."
+	exit 1
+fi
 if [ ! -e $USAGEFILE ] ; then
     $CREATEUSAGE && echo "RRD file $USAGEFILE successfully created" ;
   else
