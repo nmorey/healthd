@@ -2,5 +2,5 @@
 Description=RRD Health Monitor - Graph generation
 
 [Service]
-ExecStart=@LIBEXEC@/health/healthd-graph
+ExecStart=@LIBEXEC@/healthd/healthd-graph
 

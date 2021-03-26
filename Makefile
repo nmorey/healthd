@@ -1,6 +1,6 @@
 DESTDIR=
 PREFIX=/usr
-BINDIR=$(PREFIX)/bon/
+BINDIR=$(PREFIX)/bin/
 LIBEXEC=$(PREFIX)/lib/
 SYSCONF_TPL_DIR=$(PREFIX)/share/fillup-templates/
 SHAREDIR=$(PREFIX)/share/
@@ -46,7 +46,7 @@ $(SYSCONF_TPL): build/sysconfig
 
 build/%: %
 	@mkdir -p $$(dirname $@)
-	sed -e 's^@PREFIX@^$(PREFIX)^g' -e 's^@LIBEXEC@^$(LIBEXEC)^g' -e 's^@SHAREDIR@^$(SHAREDIR)^g' -e 's^@UNITDIR@^$(UNITDIR)^g' -e 's^@SHAREDSTATEDIR@^$(SHAREDSTATEDIR)^g' $< > $@
+	sed -e 's^@PREFIX@^$(PREFIX)^g' -e 's^@BINDIR@^$(BINDIR)^g' -e 's^@LIBEXEC@^$(LIBEXEC)^g' -e 's^@SHAREDIR@^$(SHAREDIR)^g' -e 's^@UNITDIR@^$(UNITDIR)^g' -e 's^@SHAREDSTATEDIR@^$(SHAREDSTATEDIR)^g' $< > $@
 
 clean:
 	rm -Rf build
