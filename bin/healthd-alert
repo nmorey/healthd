@@ -35,20 +35,30 @@ RRDFILE=$HEALTHDIR/health.rrd
 alert()
 {
   echo "Temperature alarm" >&2
-  echo "$*" | wall
+  echo "healthd-alert: Temperature alarm: $*" | wall
   if [ "$ADMIN_EMAIL" != "" ]; then
-	  echo "$*" | mail -s '**** Hardware Health Warning ****' $ADMIN_EMAIL
+	  (
+		  echo "Temperature Alarm"
+		  echo "  CPU Limit = $CPU_LIMIT"
+		  echo "  Disk Limit = $DISK_LIMIT"
+		  echo "Date = $(date)  // $(date '+%s')"
+		  echo "Timestamp $LABELS"
+		  echo "$*"
+	  ) | mail -s "**** Hardware Health Warning on $(hostname) ****" $ADMIN_EMAIL
   fi
 }
 
 alert_too_old()
 {
   echo "RRD is too old. Something went wrong" >&2
-  (
-    echo "Date = $(date)  // $(date '+%s')"
-    echo "Last RRD Update:"
-    rrdtool lastupdate $RRDFILE
-  ) | mail -s '**** Hardware Health Warning - RRD Out-of-date ****' $ADMIN_EMAIL
+
+  if [ "$ADMIN_EMAIL" != "" ]; then
+	  (
+		  echo "Date = $(date)  // $(date '+%s')"
+		  echo "Last RRD Update:"
+		  rrdtool lastupdate $RRDFILE
+	  ) | mail -s '**** Hardware Health Warning on $(hostname) - RRD Out-of-date ****' $ADMIN_EMAIL
+  fi
 
 }
 # Try loading the built-in sleep implementation to avoid spawning a
@@ -76,7 +86,7 @@ do
         LIMIT=99
 	if [[ "${array[$i]}" =~ "CPU" ]] || [[ "${array[$i]}" =~ "Core" ]]; then
 	  LIMIT=$CPU_LIMIT
-	elif [[ "${array[$i]}" =~ "sd" ]] || [[ "${array[$i]}" =~ "HDD" ]] ||; then
+	elif [[ "${array[$i]}" =~ "sd" ]] || [[ "${array[$i]}" =~ "HDD" ]]; then
 	  LIMIT=$DISK_LIMIT
         fi
 

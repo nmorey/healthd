@@ -2,9 +2,8 @@
 Description=Temperature Alarm Monitor
 Wants=lm_sensors.service
 After=lm_sensors.service
-Wants=healthd-mon.service
-After=healthd-mon.service
-OnFailure=notify-email@%i.service
+Wants=healthd-monitor.service
+After=healthd-monitor.service
 
 [Service]
 ExecStart=/usr/bin/healthd-alert
