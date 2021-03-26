@@ -84,6 +84,7 @@ mkdir -p %{buildroot}/%{_sharedstatedir}/%{name}/rrd
 %files
 %defattr(-,root,root,-)
 %license LICENSE
+%doc CHANGELOG
 %{_bindir}/*
 %{_unitdir}/*
 %{_fillupdir}/sysconfig.%{name}
