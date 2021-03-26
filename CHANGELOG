@@ -1,3 +1,7 @@
+------------------
+0.3.0  (2021-03-26)
+------------------
+
 * Add SPEC file
 * Fix sysconfig format for fillup to work
 
