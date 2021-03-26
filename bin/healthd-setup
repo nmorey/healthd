@@ -81,7 +81,7 @@ for i in $HEALTHSTATS; do
 
     GRAPHTEMP="$GRAPHTEMP \\
     DEF:${RRDID}=health.rrd:${RRDID}:AVERAGE \\
-    LINE2:${RRDID}`getOne $TCOLIDX $TCOLORS`:\"${GRNAME}\" "
+    LINE2:${RRDID}`getOne $TCOLIDX $COLORS`:\"${GRNAME}\" "
     TCOLIDX=$((TCOLIDX+1))
 
     UPDATEHEALTHC="$UPDATEHEALTHC:\${TEMP_${RRDID}:-U}"
