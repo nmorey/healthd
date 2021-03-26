@@ -10,7 +10,7 @@ BINDIR=/usr/bin
 UPDATE_SCRIPT=$BINDIR/healthd-monitor
 GRAPH_SCRIPT=$BINDIR/healthd-graph
 USAGEFILE="$HEALTHDIR/usage.rrd"
-HEALTHFILE="$HEALTHFILE/health.rrd"
+HEALTHFILE="$HEALTHDIR/health.rrd"
 
 #------------------------------ NO SERVICEABLE PARTS BELOW -------------------------------
 
