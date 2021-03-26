@@ -130,7 +130,7 @@ while true;
 } done
 EOF
 chmod 755 $UPDATE_SCRIPT
-echo "Created rrdupdate.sh in ${BINDIR}"
+echo "Created $UPDATE_SCRIPT"
 
 # create graph creation shell file
 cat <<EOF  > $GRAPH_SCRIPT
@@ -288,4 +288,4 @@ cat <<EOF >> $GRAPH_SCRIPT
 EOF
 
 chmod 755 $GRAPH_SCRIPT
-echo "Created mkgraphs.sh"
+echo "Created $GRAPH_SCRIPT"
