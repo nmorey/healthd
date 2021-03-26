@@ -19,7 +19,7 @@
 %define         git_ver %{nil}
 
 Name:           healthd
-Version:        0.3.0
+Version:        0.4.0
 Release:        0
 Summary:        Server monitoring and alert daemons
 License:        GPL-3.0-only
