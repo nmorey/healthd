@@ -4,8 +4,7 @@ Wants=network-online.target local-fs.target
 After=network-online.target local-fs.target
 
 [Service]
-ExecStart=/usr/bin/healthd-monitor
-PIDFile=/run/rrd.pid
+ExecStart=@LIBEXEC@/healthd/healthd-monitor
 Restart=always
 RestartSec=1800
 

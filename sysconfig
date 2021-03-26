@@ -21,8 +21,8 @@ ADMIN_EMAIL=""
 COLORS="#00FF00C0;#008000C0;#FF0000C0;#800000C0;#0000FFC0;#000080C0;#00FFFFC0;#008080C0;#FF00FFC0;#800080C0;#B0B000C0;#808000C0"
 
 # Web interface directory
-WEBDIR="/var/lib/healthd/html/"
+WEBDIR="@SHAREDSTATEDIR@/healthd/html/"
 
 # Healthd RRD storage
-HEALTHDIR="/var/lib/healthd/rrd/"
+HEALTHDIR="@SHAREDSTATEDIR@/healthd/rrd/"
 

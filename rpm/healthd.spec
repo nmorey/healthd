@@ -19,7 +19,7 @@
 %define         git_ver %{nil}
 
 Name:           healthd
-Version:        0.2.0
+Version:        0.3.0
 Release:        0
 Summary:        Server monitoring and alert daemons
 License:        GPL-3.0-only
@@ -44,16 +44,13 @@ Server monitoring and alert daemon.
 %prep
 %setup -q -n  %{name}-%{version}%{git_ver}
 
+%define dir_flags PREFIX=%{_prefix} BINDIR=%{_bindir} LIBEXEC=%{_libexecdir} SYSCONF_TPL_DIR=%{_fillupdir} SHAREDIR=%{_datarootdir} SYSTEMD=%{_unitdir} SHAREDSTATEDIR=%{_sharedstatedir}
+
 %build
+make all %{dir_flags}
 
 %install
-install -D -m0755 -t %{buildroot}/%{_bindir}/ bin/*
-install -D -m0644  sysconfig %{buildroot}/%{_fillupdir}/sysconfig.%{name}
-install -D -m0644 -t %{buildroot}/%{_unitdir} *.service *.timer
-install -D -m0644 -t %{buildroot}/%{_datarootdir}/%{name}/html html/*
-mkdir -p %{buildroot}/%{_sharedstatedir}/%{name}
-mkdir -p %{buildroot}/%{_sharedstatedir}/%{name}/html
-mkdir -p %{buildroot}/%{_sharedstatedir}/%{name}/rrd
+%make_install %{dir_flags}
 
 %pre
 %service_add_pre healthd-alert.service
@@ -86,6 +83,7 @@ mkdir -p %{buildroot}/%{_sharedstatedir}/%{name}/rrd
 %license LICENSE
 %doc CHANGELOG
 %{_bindir}/*
+%{_libexecdir}/%{name}
 %{_unitdir}/*
 %{_fillupdir}/sysconfig.%{name}
 %{_datarootdir}/%{name}/

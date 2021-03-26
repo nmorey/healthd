@@ -1,5 +1,0 @@
-#!/bin/bash
-
-#sensors  | grep "$1" | sed -re "s/.*:[^+]*?[+]([.0-9]+)[ °]C.*/\1/g"
-sensors  | grep "$*" | sed -re "s/.*:[^+]*?[+]([.0-9]+).C.*/\1/g"
-

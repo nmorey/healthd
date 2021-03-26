@@ -6,7 +6,7 @@ if [ ! -f /etc/sysconfig/healthd ]; then
 fi
 . /etc/sysconfig/healthd
 
-BINDIR=/usr/bin
+BINDIR=@LIBEXEC@/healthd
 UPDATE_SCRIPT=$BINDIR/healthd-monitor
 GRAPH_SCRIPT=$BINDIR/healthd-graph
 USAGEFILE="$HEALTHDIR/usage.rrd"
@@ -111,10 +111,6 @@ fi
 # create update shell file
 cat <<EOF > $UPDATE_SCRIPT
 #!/bin/sh
-
-PIDFILE=/run/rrd.pid
-
-echo -n \$\$ > \$PIDFILE
 
 while true; do
   { $UPDATEUSAGE

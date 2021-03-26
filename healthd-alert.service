@@ -6,7 +6,7 @@ Wants=healthd-monitor.service
 After=healthd-monitor.service
 
 [Service]
-ExecStart=/usr/bin/healthd-alert
+ExecStart=@BINDIR@/healthd-alert
 Type=simple
 KillMode=process
 Restart=always
