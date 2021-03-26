@@ -232,7 +232,7 @@ EOF
 
 	for ups in $UPSSTATS; do
 			cat <<EOF >> $GRAPH_SCRIPT
-  <b>$ups</b>
+  echo "<b>$ups</b>"
   upsc $ups
 EOF
 	done
