@@ -26,8 +26,16 @@ if [ ! -f /etc/sysconfig/healthd ]; then
 fi
 . /etc/sysconfig/healthd
 
-CPU_LIMIT=75
-DISK_LIMIT=45
+if [ "$CPU_TEMP_LIMIT" == "" ]; then
+	echo "Error: CPU_TEMP_LIMIT is not set" >&2
+	exit 1
+fi
+
+if [ "$DISK_TEMP_LIMIT" == "" ]; then
+	echo "Error: DISK_TEMP_LIMIT is not set" >&2
+	exit 1
+fi
+
 DELAY=60
 ALARM_DELAY=600
 RRDFILE=$HEALTHDIR/health.rrd
@@ -69,6 +77,20 @@ enable -f sleep.so sleep >/dev/null 2>&1
 LABELS=$(rrdtool lastupdate $RRDFILE | head -n 1)
 read -r -a array <<< "$LABELS"
 
+# Try to get the max CPU temp from sensors
+SENSORS_HIGH_TEMP=`sensors | grep Core | sed -e 's/.*high = +\?\([0-9]\+\)\.[0-9]\+°C.*/\1/' | \
+						   sort -n -u | head -n 1`
+case $SENSORS_HIGH_TEMP in
+	''|*[!0-9]*)
+		# Wrong format. Ignore this value
+		false;;
+    *)
+		# Good number. Override sysconfig default with it
+		CPU_TEMP_LIMIT=$SENSORS_HIGH_TEMP
+		echo "Using CPU specific value for temperature alert: ${SENSORS_HIGH_TEMP}"
+		;;
+esac
+
 while true
 do
  i=0
@@ -85,9 +107,9 @@ do
  while [ $# -ne 0 ]; do
         LIMIT=99
 	if [[ "${array[$i]}" =~ "CPU" ]] || [[ "${array[$i]}" =~ "Core" ]]; then
-	  LIMIT=$CPU_LIMIT
+	  LIMIT=$CPU_TEMP_LIMIT
 	elif [[ "${array[$i]}" =~ "sd" ]] || [[ "${array[$i]}" =~ "HDD" ]]; then
-	  LIMIT=$DISK_LIMIT
+	  LIMIT=$DISK_TEMP_LIMIT
         fi
 
 	sane_temp=$(echo $1 | sed -e 's/\.[0-9]\+//')

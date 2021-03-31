@@ -1,3 +1,6 @@
+* Customizable alert temperatures
+* Read alert temperature from sensors value if possible
+
 ------------------
 0.4.0  (2021-03-26)
 ------------------

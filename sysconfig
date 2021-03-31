@@ -26,3 +26,9 @@ WEBDIR="@SHAREDSTATEDIR@/healthd/html/"
 # Healthd RRD storage
 HEALTHDIR="@SHAREDSTATEDIR@/healthd/rrd/"
 
+# Fallback max CPU temperature
+# By default uses High value returned by sensors
+CPU_TEMP_LIMIT=75
+
+# Max disk temperature
+DISK_TEMP_LIMIT=45
