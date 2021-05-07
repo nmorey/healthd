@@ -14,6 +14,10 @@ MDSTATS=""
 # UPSSTATS="myups@localhost"
 UPSSTATS=""
 
+# List of docker images to monitor
+# Set to '*' for all of them
+DOCKERSTATS=""
+
 # Email for temperature alert notifications
 ADMIN_EMAIL=""
 

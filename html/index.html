@@ -11,6 +11,7 @@
 			  $("#includedUPS").load("ups.html"); 
 			  $("#includedSYS").load("sys-info.html"); 
 			  $("#includedPS").load("ps.html"); 
+			  $("#includedDocker").load("docker.html"); 
 			  $("#includedSYSTEMCTL").load("systemctl.html"); 
 			});
 			function reloadPage(){
@@ -31,6 +32,7 @@
 				<li><a href="#mdadm">MDADM Status</a></li>
 				<li><a href="#ups">UPS Status</a></li>
 				<li><a href="#ps">Process Status</a></li>
+				<li><a href="#docker">Docker stats</a></li>
 				<li><a href="#systemctl">systemctl</a></li>
 				<ul>
 					<li><a href="#systemctl-running">systemctl running</a></li>
@@ -100,6 +102,9 @@
 
 			<h3 id="ps">Process Status</h3>
 			<div id="includedPS"></div>
+
+			<h3 id="docker">Docker Stats</h3>
+			<div id="includedDocker"></div>
 
 			<h3 id="systemctl">Systemctl</h3>
 			<div id="includedSYSTEMCTL"></div>

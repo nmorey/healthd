@@ -238,6 +238,20 @@ EOF
 EOF
 fi
 
+if [ "$DOCKERSTATS" != "" ]; then
+	D_ARG=""
+	if [ "$DOCKERSTATS" != "*" ]; then
+		D_ARG=$DOCKERSTATS
+	fi
+	cat <<EOF >> $GRAPH_SCRIPT
+(
+  echo '<pre><code>'
+  docker stats --no-stream --no-trunc $D_ARG
+  echo '</code></pre>'
+) > $WEBDIR/docker.html
+EOF
+fi
+
 cat <<EOF >> $GRAPH_SCRIPT
 (
   echo '<pre><code>'
