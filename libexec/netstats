@@ -1,5 +1,5 @@
 #!/bin/sh
 
 #ifconfig $1 | grep bytes | sed -re "s/.*$2 bytes:([0-9]+).*/\1/g"
-ip -s link show $1 | grep -A 1 "$2: bytes" | tail -n 1 | awk '{ print $1 }'
+ip -s link show $1 | egrep -A 1 "$2: +bytes" | tail -n 1 | awk '{ print $1 }'
 
