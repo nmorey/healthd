@@ -36,3 +36,6 @@ CPU_TEMP_LIMIT=75
 
 # Max disk temperature
 DISK_TEMP_LIMIT=45
+
+# Refresh period
+REFRESH_PERIOD=7

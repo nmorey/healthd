@@ -120,7 +120,7 @@ while true; do
   { $UPDATEHEALTH
   $UPDATEHEALTHC
   } &
-  sleep 7;
+  sleep $REFRESH_PERIOD;
 done
 EOF
 chmod 755 $UPDATE_SCRIPT

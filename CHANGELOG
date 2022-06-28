@@ -1,6 +1,7 @@
 * Customizable alert temperatures
 * Read alert temperature from sensors value if possible
 * Support new ip link show format
+* Tunable refresh rate for healthd-monitor
 
 ------------------
 0.4.0  (2021-03-26)
