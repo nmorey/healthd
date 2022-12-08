@@ -24,8 +24,8 @@ function getOne() {
 }
 
 # create and update command beginnings
-CREATEUSAGE="rrdtool create $USAGEFILE --step 15"
-CREATEHEALTH="rrdtool create $HEALTHFILE --step 15"
+CREATEUSAGE="rrdtool create $USAGEFILE --step $REFRESH_PERIOD"
+CREATEHEALTH="rrdtool create $HEALTHFILE --step $REFRESH_PERIOD"
 UPDATEUSAGEC="rrdtool update $USAGEFILE \"N"
 UPDATEHEALTHC="rrdtool update $HEALTHFILE \"N"
 UCOLIDXH=1
@@ -35,7 +35,7 @@ TCOLIDX=1
 
 # usage
 for i in $USAGESTATS; do
-    CREATEUSAGE="$CREATEUSAGE DS:${i}r:COUNTER:15:U:U DS:${i}w:COUNTER:15:U:U"
+    CREATEUSAGE="$CREATEUSAGE DS:${i}r:COUNTER:$REFRESH_PERIOD:U:U DS:${i}w:COUNTER:$REFRESH_PERIOD:U:U"
 
     if echo ${i} | egrep "hd.+|md.+|sd.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
   VAL_${i}r=\`${BINDIR}/hddstat ${i} 3\`
@@ -68,7 +68,7 @@ for i in $HEALTHSTATS; do
     GRNAME=`getOne 3 "${i}"`
     GRNAME=${GRNAME//+/ }
 
-    CREATEHEALTH="$CREATEHEALTH DS:${RRDID}:GAUGE:15:0:120"
+    CREATEHEALTH="$CREATEHEALTH DS:${RRDID}:GAUGE:$REFRESH_PERIOD:0:160"
 
     if echo ${RRDID} | egrep "hd.+|sd.+" > /dev/null ; then
         UPDATEHEALTH="$UPDATEHEALTH
@@ -87,7 +87,7 @@ for i in $HEALTHSTATS; do
     UPDATEHEALTHC="$UPDATEHEALTHC:\${TEMP_${RRDID}:-U}"
 done
 # assemble commands
-CREATEUSAGE="$CREATEUSAGE DS:cpu:GAUGE:15:0:100 DS:load:GAUGE:15:0:U RRA:AVERAGE:0.5:240:1440 RRA:AVERAGE:0.5:4:1440"
+CREATEUSAGE="$CREATEUSAGE DS:cpu:GAUGE:$REFRESH_PERIOD:0:U DS:load:GAUGE:15:0:U RRA:AVERAGE:0.5:240:1440 RRA:AVERAGE:0.5:4:1440"
 CREATEHEALTH="$CREATEHEALTH RRA:AVERAGE:0.5:240:1440 RRA:AVERAGE:0.5:4:1440"
 UPDATEUSAGEC="$UPDATEUSAGEC:\`${BINDIR}/cpustat 10 8\`:\`${BINDIR}/cpustat\`\""
 UPDATEHEALTHC="$UPDATEHEALTHC\""
@@ -116,11 +116,11 @@ while true; do
   { $UPDATEUSAGE
   $UPDATEUSAGEC
   } &
-  sleep 7;
   { $UPDATEHEALTH
   $UPDATEHEALTHC
   } &
-  sleep $REFRESH_PERIOD;
+  wait
+  sleep $(($REFRESH_PERIOD/2));
 done
 EOF
 chmod 755 $UPDATE_SCRIPT
