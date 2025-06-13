@@ -37,7 +37,7 @@ TCOLIDX=1
 for i in $USAGESTATS; do
     CREATEUSAGE="$CREATEUSAGE DS:${i}r:COUNTER:$REFRESH_PERIOD:U:U DS:${i}w:COUNTER:$REFRESH_PERIOD:U:U"
 
-    if echo ${i} | egrep "hd.+|md.+|sd.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
+    if echo ${i} | grep -E "hd.+|md.+|sd.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
   VAL_${i}r=\`${BINDIR}/hddstat ${i} 3\`
   VAL_${i}w=\`${BINDIR}/hddstat ${i} 7\`" ;
       GRAPHHDD="$GRAPHHDD \\
@@ -48,7 +48,7 @@ for i in $USAGESTATS; do
     LINE2:${i}r`getOne $UCOLIDXH $COLORS`:\"${i} read\" \\
     LINE2:${i}w`getOne $((UCOLIDXH+1)) $COLORS`:\"${i} write\" " ;
       UCOLIDXH=$((UCOLIDXH+2)) ; fi
-    if echo ${i} | egrep "eth.+|eno.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
+    if echo ${i} | grep -E "eth.+|eno.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
   VAL_${i}r=\`${BINDIR}/netstats ${i} RX\`
   VAL_${i}w=\`${BINDIR}/netstats ${i} TX\`" ;
       GRAPHNET="$GRAPHNET \\
@@ -70,7 +70,7 @@ for i in $HEALTHSTATS; do
 
     CREATEHEALTH="$CREATEHEALTH DS:${RRDID}:GAUGE:$REFRESH_PERIOD:0:160"
 
-    if echo ${RRDID} | egrep "hd.+|sd.+" > /dev/null ; then
+    if echo ${RRDID} | grep -E "hd.+|sd.+" > /dev/null ; then
         UPDATEHEALTH="$UPDATEHEALTH
         TEMP_${RRDID}=\`${BINDIR}/hddtemp /dev/${RRDID}\`"
         GRNAME="${SENSID}"
