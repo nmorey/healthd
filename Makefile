@@ -1,11 +1,12 @@
 DESTDIR=
 PREFIX=/usr
 BINDIR=$(PREFIX)/bin/
-LIBEXEC=$(PREFIX)/lib/
+LIBEXEC=$(PREFIX)/libexec/
 SYSCONF_TPL_DIR=$(PREFIX)/share/fillup-templates/
 SHAREDIR=$(PREFIX)/share/
 UNITDIR=$(PREFIX)/lib/systemd
-SHAREDSTATEDIR=/var/lib
+SHAREDSTATEDIR=$(PREFIX)/../var/lib
+SYSCONF_DIR=$(PREFIX)/../etc/sysconfig
 
 BINS := $(shell find bin/ -type f | grep -v "*~")
 INST_BINS := $(patsubst bin/%, $(DESTDIR)$(BINDIR)/%, $(BINS))
@@ -46,7 +47,7 @@ $(SYSCONF_TPL): build/sysconfig
 
 build/%: %
 	@mkdir -p $$(dirname $@)
-	sed -e 's^@PREFIX@^$(PREFIX)^g' -e 's^@BINDIR@^$(BINDIR)^g' -e 's^@LIBEXEC@^$(LIBEXEC)^g' -e 's^@SHAREDIR@^$(SHAREDIR)^g' -e 's^@UNITDIR@^$(UNITDIR)^g' -e 's^@SHAREDSTATEDIR@^$(SHAREDSTATEDIR)^g' $< > $@
+	sed -e 's^@PREFIX@^$(PREFIX)^g' -e 's^@BINDIR@^$(BINDIR)^g' -e 's^@LIBEXEC@^$(LIBEXEC)^g' -e 's^@SHAREDIR@^$(SHAREDIR)^g' -e 's^@UNITDIR@^$(UNITDIR)^g' -e 's^@SHAREDSTATEDIR@^$(SHAREDSTATEDIR)^g'  -e 's^@SYSCONF_DIR@^$(SYSCONF_DIR)^g' $< > $@
 
 clean:
 	rm -Rf build
