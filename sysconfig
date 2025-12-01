@@ -1,13 +1,15 @@
 # Data transfer counters: entries like hda, sda, md0, eth0
-# example: USAGESTATS="sda eno1"
+# example: USAGESTATS="hd;/dev/disk/by-id/myID;Label+for+graph hd;sda net;ifname;Label+for+if"
 USAGESTATS=""
 
 # Temperature values: internal name;sensor name;description+for+graph
-# example: HEALTHSTATS="CPU0;Package+id+0;Processor+Temp sda;HDD0"
+# example: HEALTHSTATS="sensors;chip+name;sensors+string;Label+for+graph hd;sda;HDD0"
+# Note: hd devices support any device path without the top /dev like disk/by-id/XXXX
 HEALTHSTATS=""
 
 # Raid to monitor
 # example: MDSTATS="md1"
+# Note: md devices support any device path without the top /dev.
 MDSTATS=""
 
 # UPS to monitor
@@ -22,7 +24,7 @@ DOCKERSTATS=""
 ADMIN_EMAIL=""
 
 # Colors for graphs
-COLORS="#00FF00C0;#008000C0;#FF0000C0;#800000C0;#0000FFC0;#000080C0;#00FFFFC0;#008080C0;#FF00FFC0;#800080C0;#B0B000C0;#808000C0"
+COLORS="#E6194BC0;#3CB44BC0;#FFE119C0;#4363D8C0;#F58231C0;#911EB4C0;#42D4F4C0;#F032E6C0;#BFEF45C0;#FABED4C0;#469990C0;#DCBEFFC0;#9A6324C0;#FFFAC8C0;#800000C0;#AAFFC3C0;#808000C0;#FFD8B1C0;#000075C0;#A9A9A9C0"
 
 # Web interface directory
 WEBDIR="@SHAREDSTATEDIR@/healthd/html/"
@@ -35,7 +37,7 @@ HEALTHDIR="@SHAREDSTATEDIR@/healthd/rrd/"
 CPU_TEMP_LIMIT=75
 
 # Max disk temperature
-DISK_TEMP_LIMIT=45
+DISK_TEMP_LIMIT=60
 
 # Refresh period
 REFRESH_PERIOD=60

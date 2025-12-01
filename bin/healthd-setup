@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ ! -f /etc/sysconfig/healthd ]; then
-	echo "Missing /etc/sysconfig/healthd"
+if [ ! -f @SYSCONF_DIR@/healthd ]; then
+	echo "Missing @SYSCONF_DIR@/healthd"
 	exit 1
 fi
-. /etc/sysconfig/healthd
+ . @SYSCONF_DIR@/healthd
 
 BINDIR=@LIBEXEC@/healthd
 UPDATE_SCRIPT=$BINDIR/healthd-monitor
@@ -23,9 +23,14 @@ function getOne() {
   }
 }
 
+if [ -z $REFRESH_PERIOD ]; then
+    REFRESH_PERIOD=60
+fi
+
 # create and update command beginnings
 CREATEUSAGE="rrdtool create $USAGEFILE --step $REFRESH_PERIOD"
 CREATEHEALTH="rrdtool create $HEALTHFILE --step $REFRESH_PERIOD"
+HEARTBEAT=$((2*$REFRESH_PERIOD))
 UPDATEUSAGEC="rrdtool update $USAGEFILE \"N"
 UPDATEHEALTHC="rrdtool update $HEALTHFILE \"N"
 UCOLIDXH=1
@@ -33,63 +38,153 @@ UCOLIDXN=1
 TCOLIDX=1
 
 
-# usage
-for i in $USAGESTATS; do
-    CREATEUSAGE="$CREATEUSAGE DS:${i}r:COUNTER:$REFRESH_PERIOD:U:U DS:${i}w:COUNTER:$REFRESH_PERIOD:U:U"
-
-    if echo ${i} | grep -E "hd.+|md.+|sd.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
-  VAL_${i}r=\`${BINDIR}/hddstat ${i} 3\`
-  VAL_${i}w=\`${BINDIR}/hddstat ${i} 7\`" ;
-      GRAPHHDD="$GRAPHHDD \\
-    DEF:${i}r_s=usage.rrd:${i}r:AVERAGE \\
-    DEF:${i}w_s=usage.rrd:${i}w:AVERAGE \\
-    CDEF:${i}r=${i}r_s,512,* \\
-    CDEF:${i}w=${i}w_s,512,* \\
-    LINE2:${i}r`getOne $UCOLIDXH $COLORS`:\"${i} read\" \\
-    LINE2:${i}w`getOne $((UCOLIDXH+1)) $COLORS`:\"${i} write\" " ;
-      UCOLIDXH=$((UCOLIDXH+2)) ; fi
-    if echo ${i} | grep -E "eth.+|eno.+" > /dev/null ; then UPDATEUSAGE="$UPDATEUSAGE
-  VAL_${i}r=\`${BINDIR}/netstats ${i} RX\`
-  VAL_${i}w=\`${BINDIR}/netstats ${i} TX\`" ;
-      GRAPHNET="$GRAPHNET \\
-    DEF:${i}r=usage.rrd:${i}r:AVERAGE \\
-    DEF:${i}w=usage.rrd:${i}w:AVERAGE \\
-    LINE2:${i}r`getOne $UCOLIDXN $COLORS`:\"${i} recv\" \\
-    LINE2:${i}w`getOne $((UCOLIDXN+1)) $COLORS`:\"${i} send\" " ;
-      UCOLIDXN=$((UCOLIDXN+2)) ; fi
-
-    UPDATEUSAGEC="$UPDATEUSAGEC:\${VAL_${i}r:-U}:\${VAL_${i}w:-U}"
-done
-
-# health
-for i in $HEALTHSTATS; do
-    RRDID=`getOne 1 "${i}"`
-    SENSID=`getOne 2 "${i}" | sed -e 's/+/ /g'`
-    GRNAME=`getOne 3 "${i}"`
-    GRNAME=${GRNAME//+/ }
-
-    CREATEHEALTH="$CREATEHEALTH DS:${RRDID}:GAUGE:$REFRESH_PERIOD:0:160"
-
-    if echo ${RRDID} | grep -E "hd.+|sd.+" > /dev/null ; then
-        UPDATEHEALTH="$UPDATEHEALTH
-        TEMP_${RRDID}=\`${BINDIR}/hddtemp /dev/${RRDID}\`"
-        GRNAME="${SENSID}"
-    else
-         UPDATEHEALTH="$UPDATEHEALTH
-         TEMP_${RRDID}=\`${BINDIR}/senstemp "${SENSID}"\`"
+function usage_add_disk() {
+    local disk=$1
+    shift
+    local label="$*"
+    if [ "$label" == "" ]; then
+        label=$net
     fi
 
+    CREATEUSAGE="$CREATEUSAGE
+  DS:hdd${UCOLIDXH}r:COUNTER:$HEARTBEAT:U:U
+  DS:hdd${UCOLIDXH}w:COUNTER:$HEARTBEAT:U:U"
+    UPDATEUSAGE="$UPDATEUSAGE
+    VAL_H${UCOLIDXH}r=\`${BINDIR}/hddstat ${disk} 3\`
+    if [ \$? -ne 0 ]; then VAL_H${UCOLIDXH}r=''; fi
+    VAL_H${UCOLIDXH}w=\`${BINDIR}/hddstat ${disk} 7\`
+    if [ \$? -ne 0 ]; then VAL_H${UCOLIDXH}w=''; fi"
+    GRAPHHDD="$GRAPHHDD \\
+  DEF:hdd${UCOLIDXH}r_s=usage.rrd:hdd${UCOLIDXH}r:AVERAGE \\
+  DEF:hdd${UCOLIDXH}w_s=usage.rrd:hdd${UCOLIDXH}w:AVERAGE \\
+  CDEF:hdd${UCOLIDXH}r=hdd${UCOLIDXH}r_s,512,* \\
+  CDEF:hdd${UCOLIDXH}w=hdd${UCOLIDXH}w_s,512,* \\
+  LINE2:hdd${UCOLIDXH}r$(getOne $UCOLIDXH $COLORS):\"${label} read\" \\
+  LINE2:hdd${UCOLIDXH}w$(getOne $((UCOLIDXH+1)) $COLORS):\"${label} write\" " 
+    UPDATEUSAGEC="$UPDATEUSAGEC:\${VAL_H${UCOLIDXH}r:-U}:\${VAL_H${UCOLIDXH}w:-U}"
+    UCOLIDXH=$((UCOLIDXH+2)) ;
+}
+
+function usage_add_net() {
+    local net=$1
+    shift
+    local label="$*"
+    if [ "$label" == "" ]; then
+        label=$net
+    fi
+
+    CREATEUSAGE="$CREATEUSAGE
+  DS:net${UCOLIDXN}r:COUNTER:$HEARTBEAT:U:U
+  DS:net${UCOLIDXN}w:COUNTER:$HEARTBEAT:U:U"
+    UPDATEUSAGE="$UPDATEUSAGE
+    VAL_N${UCOLIDXN}r=\`${BINDIR}/netstats ${net} RX\`
+    if [ \$? -ne 0 ]; then VAL_N${UCOLIDXH}r=''; fi
+    VAL_N${UCOLIDXN}w=\`${BINDIR}/netstats ${net} TX\`
+    if [ \$? -ne 0 ]; then VAL_N${UCOLIDXH}w=''; fi"
+    GRAPHNET="$GRAPHNET \\
+  DEF:n${UCOLIDXN}r=usage.rrd:net${UCOLIDXN}r:AVERAGE \\
+  DEF:n${UCOLIDXN}w=usage.rrd:net${UCOLIDXN}w:AVERAGE \\
+  LINE2:n${UCOLIDXN}r`getOne $UCOLIDXN $COLORS`:\"${label} recv\" \\
+  LINE2:n${UCOLIDXN}w`getOne $((UCOLIDXN+1)) $COLORS`:\"${label} send\" " ;
+    UPDATEUSAGEC="$UPDATEUSAGEC:\${VAL_N${UCOLIDXN}r:-U}:\${VAL_N${UCOLIDXN}w:-U}"
+    UCOLIDXN=$((UCOLIDXN+2))
+}
+
+# usage
+for i in $USAGESTATS; do
+    DEVTYPE=$(getOne 1 "${i}")
+    case "$DEVTYPE" in
+        "hd")
+            device=$(getOne 2 "${i}")
+            label=$(getOne 3 "${i}" | sed -e 's/+/ /g')
+            usage_add_disk "$device" "$label"
+            ;;
+        "net")
+            device=$(getOne 2 "${i}")
+            label=$(getOne 3 "${i}" | sed -e 's/+/ /g')
+            usage_add_net "$device" "$label"
+            ;;
+        *)
+            echo "Unrecognized device format '$i'" >&2
+            exit 1
+            ;;
+    esac
+done
+
+function health_add_hdd() {
+    local disk=$1
+    shift
+    local label="$*"
+    if [ "$label" == "" ]; then
+        label=$disk
+    fi
+
+    UPDATEHEALTH="$UPDATEHEALTH
+    TEMP_${TCOLIDX}=\`${BINDIR}/hddtemp /dev/${disk}\`
+    if [ \$? -ne 0 ]; then TEMP_${TCOLIDX}=''; fi"
+}
+
+function health_add_sensor() {
+    local chip=$1
+    local sensor=$2
+    shift 2
+    local label="$*"
+    if [ "$label" == "" ]; then
+        label="$chip $sensor"
+    fi
+
+    UPDATEHEALTH="$UPDATEHEALTH
+    TEMP_${TCOLIDX}=\`${BINDIR}/senstemp ${chip} ${sensor}\`
+    if [ \$? -ne 0 ]; then TEMP_${TCOLIDX}=''; fi"
+}
+# health
+echo "HEALTH"
+for i in $HEALTHSTATS; do
+    DEVTYPE=$(getOne 1 "${i}")
+    case "$DEVTYPE" in
+        "hd")
+            device=$(getOne 2 "${i}")
+            label=$(getOne 3 "${i}" | sed -e 's/+/ /g')
+            health_add_hdd "$device" "$label"
+            ;;
+        "sensor")
+            chip=$(getOne 2 "${i}" | sed -e 's/+/ /g')
+            sensor=$(getOne 3 "${i}" | sed -e 's/+/ /g')
+            label=$(getOne 4 "${i}" | sed -e 's/+/ /g')
+            health_add_sensor "$chip" "$sensor" "$label"
+            ;;
+        *)
+            echo "Unrecognized device format '$i'" >&2
+            exit 1
+            ;;
+    esac
+
+    CREATEHEALTH="$CREATEHEALTH DS:T${TCOLIDX}:GAUGE:$HEARTBEAT:0:160"
+
+
     GRAPHTEMP="$GRAPHTEMP \\
-    DEF:${RRDID}=health.rrd:${RRDID}:AVERAGE \\
-    LINE2:${RRDID}`getOne $TCOLIDX $COLORS`:\"${GRNAME}\" "
+    DEF:T${TCOLIDX}=health.rrd:T${TCOLIDX}:AVERAGE \\
+    LINE2:T${TCOLIDX}`getOne $TCOLIDX $COLORS`:\"${label}\" "
+    UPDATEHEALTHC="$UPDATEHEALTHC:\${TEMP_${TCOLIDX}:-U}"
+
     TCOLIDX=$((TCOLIDX+1))
 
-    UPDATEHEALTHC="$UPDATEHEALTHC:\${TEMP_${RRDID}:-U}"
 done
 # assemble commands
-CREATEUSAGE="$CREATEUSAGE DS:cpu:GAUGE:$REFRESH_PERIOD:0:U DS:load:GAUGE:15:0:U RRA:AVERAGE:0.5:240:1440 RRA:AVERAGE:0.5:4:1440"
-CREATEHEALTH="$CREATEHEALTH RRA:AVERAGE:0.5:240:1440 RRA:AVERAGE:0.5:4:1440"
-UPDATEUSAGEC="$UPDATEUSAGEC:\`echo '100-'\$(${BINDIR}/cpustat 2 10) | bc\`:\`${BINDIR}/cpustat\`\""
+CREATEUSAGE="$CREATEUSAGE DS:cpu:GAUGE:$HEARTBEAT:0:U DS:load:GAUGE:$HEARTBEAT:0:U
+RRA:AVERAGE:0.5:1:2880
+RRA:MAX:0.5:1:2880
+RRA:AVERAGE:0.5:30:672
+RRA:MAX:0.5:30:672
+RRA:AVERAGE:0.5:120:4380
+RRA:MAX:0.5:120:4380"
+CREATEHEALTH="$CREATEHEALTH RRA:AVERAGE:0.5:1:2880
+RRA:MAX:0.5:1:2880
+RRA:AVERAGE:0.5:30:672
+RRA:MAX:0.5:30:672
+RRA:AVERAGE:0.5:120:4380
+RRA:MAX:0.5:120:4380"
+UPDATEUSAGEC="$UPDATEUSAGEC:\`${BINDIR}/cpustat 2 10\`:\`${BINDIR}/cpustat\`\""
 UPDATEHEALTHC="$UPDATEHEALTHC\""
 
 # create RRD files
@@ -113,14 +208,21 @@ cat <<EOF > $UPDATE_SCRIPT
 #!/bin/sh
 
 while true; do
+  start_time=\$(date +%s)
   { $UPDATEUSAGE
-  $UPDATEUSAGEC
+    $UPDATEUSAGEC
   } &
   { $UPDATEHEALTH
-  $UPDATEHEALTHC
+    $UPDATEHEALTHC
   } &
   wait
-  sleep $(($REFRESH_PERIOD/2));
+  end_time=\$(date +%s)
+  execution_time=\$((end_time - start_time))
+  sleep_time=\$(($REFRESH_PERIOD - execution_time))
+
+  if [ "\$sleep_time" -gt 0 ]; then
+    sleep "\$sleep_time"
+  fi
 done
 EOF
 chmod 755 $UPDATE_SCRIPT
@@ -175,10 +277,16 @@ function cpug {
     --start now-\$2 \\
     --title "CPU usage: \$2" \\
     --vertical-label "load" \\
-    DEF:cpu=usage.rrd:cpu:AVERAGE \\
-    DEF:load=usage.rrd:load:AVERAGE \\
-    LINE2:cpu#00000080:"CPU usage" \\
-    LINE2:load#FF0000C0:"CPU load"
+    --lower-limit 0 --upper-limit 100 --rigid \\
+    --right-axis 0.1:0 \\
+    --right-axis-label "Load Average" \\
+    --right-axis-format "%1.1lf"  \\
+    DEF:cpu_s=usage.rrd:cpu:AVERAGE \\
+    DEF:load_s=usage.rrd:load:AVERAGE \\
+    CDEF:cpu=100.0,cpu_s,- \\
+    CDEF:load=load_s,10,* \\
+    AREA:cpu#808080C0:"CPU %" \\
+    LINE2:load#0000FF:"CPU load"
 }
 
 function dograph {
