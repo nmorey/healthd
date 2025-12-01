@@ -1,3 +1,4 @@
-#!/bin/sh
+#!/bin/bash -e
+set -o pipefail
 
 smartctl -s on -d ata -a $1 | grep Temp | sed -re "s/.* +- +([0-9]+).*/\1/g"
