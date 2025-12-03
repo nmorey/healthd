@@ -7,12 +7,24 @@ fi
  . @SYSCONF_DIR@/healthd
 
 BINDIR=@LIBEXEC@/healthd
+
 UPDATE_SCRIPT=$BINDIR/healthd-monitor
 GRAPH_SCRIPT=$BINDIR/healthd-graph
-USAGEFILE="$HEALTHDIR/usage.rrd"
-HEALTHFILE="$HEALTHDIR/health.rrd"
+USAGEFILE="$RRD_DIR/usage.rrd"
+HEALTHFILE="$RRD_DIR/health.rrd"
 
-#------------------------------ NO SERVICEABLE PARTS BELOW -------------------------------
+# Sanity checks
+if [ ! -d $RRD_DIR ]; then
+	echo "$RRD_DIR is missing."
+	exit 1
+fi
+if [ -e $USAGEFILE ] ; then
+    echo "Error: $USAGEFILE already exits!" >&2
+    exit 1
+fi
+if [ -e $HEALTHFILE ] ; then
+    echo "Error: $HEALTHFILE already exits!" >&2
+fi
 
 # "parse" separated values
 function getOne() {
@@ -187,21 +199,8 @@ RRA:MAX:0.5:120:4380"
 UPDATEUSAGEC="$UPDATEUSAGEC:\`${BINDIR}/cpustat 2 10\`:\`${BINDIR}/cpustat\`\""
 UPDATEHEALTHC="$UPDATEHEALTHC\""
 
-# create RRD files
-if [ ! -d $HEALTHDIR ]; then
-	echo "$HEALTHDIR is missing."
-	exit 1
-fi
-if [ ! -e $USAGEFILE ] ; then
-    $CREATEUSAGE && echo "RRD file $USAGEFILE successfully created" ;
-  else
-    echo "Not creating RRD file $USAGEFILE because it exists already!" ;
-fi
-if [ ! -e $HEALTHFILE ] ; then
-    $CREATEHEALTH && echo "RRD file $HEALTHFILE successfully created" ;
-  else
-    echo "Not creating RRD file $HEALTHFILE because it exists already!" ;
-fi
+$CREATEUSAGE && echo "RRD file $USAGEFILE successfully created"
+$CREATEHEALTH && echo "RRD file $HEALTHFILE successfully created"
 
 # create update shell file
 cat <<EOF > $UPDATE_SCRIPT
@@ -232,7 +231,7 @@ echo "Created $UPDATE_SCRIPT"
 cat <<EOF  > $GRAPH_SCRIPT
 #!/bin/bash
 function tempg {
-  rrdtool graph $WEBDIR/\$1.png \$5 \\
+  rrdtool graph $WEB_DIR/\$1.png \$5 \\
     --width \$3 \\
     --height \$4 \\
     --start now-\$2 \\
@@ -243,7 +242,7 @@ function tempg {
 }
 
 function hddg {
-  rrdtool graph $WEBDIR/\$1.png \$5 \\
+  rrdtool graph $WEB_DIR/\$1.png \$5 \\
     --width \$3 \\
     --height \$4 \\
     --start now-\$2 \\
@@ -257,7 +256,7 @@ function hddg {
 }
 
 function netg {
-  rrdtool graph $WEBDIR/\$1.png \$5 \\
+  rrdtool graph $WEB_DIR/\$1.png \$5 \\
     --width \$3 \\
     --height \$4 \\
     --start now-\$2 \\
@@ -271,7 +270,7 @@ function netg {
 }
 
 function cpug {
-  rrdtool graph $WEBDIR/\$1.png \$5 \\
+  rrdtool graph $WEB_DIR/\$1.png \$5 \\
     --width \$3 \\
     --height \$4 \\
     --start now-\$2 \\
@@ -324,7 +323,7 @@ EOF
 
 	cat <<EOF >> $GRAPH_SCRIPT
   echo '</code></pre>'
-) > $WEBDIR/mdadm.html
+) > $WEB_DIR/mdadm.html
 EOF
 fi
 
@@ -342,7 +341,7 @@ EOF
 	done
 	cat <<EOF >> $GRAPH_SCRIPT
   echo '</code></pre>'
-) > $WEBDIR/ups.html
+) > $WEB_DIR/ups.html
 EOF
 fi
 
@@ -356,7 +355,7 @@ if [ "$DOCKERSTATS" != "" ]; then
   echo '<pre><code>'
   docker stats --no-stream --no-trunc $D_ARG
   echo '</code></pre>'
-) > $WEBDIR/docker.html
+) > $WEB_DIR/docker.html
 EOF
 fi
 
@@ -381,13 +380,13 @@ cat <<EOF >> $GRAPH_SCRIPT
   echo -e "\n\n<b>OS-release</b>"
   cat /etc/os-release
   echo '</code></pre>'
-) > $WEBDIR/sys-info.html
+) > $WEB_DIR/sys-info.html
 
 (
   echo '<pre><code>'
   ps aux --forest | sed -e 's/</\&#60;/g' -e 's/>/\&#62;/g'
   echo '</code></pre>'
-) > $WEBDIR/ps.html
+) > $WEB_DIR/ps.html
 
 (
   echo '<h2 id="systemctl-running">systemctl --state=running</h2>'
@@ -401,7 +400,7 @@ cat <<EOF >> $GRAPH_SCRIPT
   systemctl --state=failed
   echo -e "\n\n"
   echo '</code></pre>'
-) > $WEBDIR/systemctl.html
+) > $WEB_DIR/systemctl.html
 EOF
 
 chmod 755 $GRAPH_SCRIPT
