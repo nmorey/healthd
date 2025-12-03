@@ -58,22 +58,22 @@ function usage_add_disk() {
         label=$net
     fi
 
-    CREATEUSAGE="$CREATEUSAGE
+    CREATEUSAGE+="
   DS:hdd${UCOLIDXH}r:COUNTER:$HEARTBEAT:U:U
   DS:hdd${UCOLIDXH}w:COUNTER:$HEARTBEAT:U:U"
-    UPDATEUSAGE="$UPDATEUSAGE
+    UPDATEUSAGE+="
     VAL_H${UCOLIDXH}r=\`${BINDIR}/hddstat ${disk} 3\`
     if [ \$? -ne 0 ]; then VAL_H${UCOLIDXH}r=''; fi
     VAL_H${UCOLIDXH}w=\`${BINDIR}/hddstat ${disk} 7\`
     if [ \$? -ne 0 ]; then VAL_H${UCOLIDXH}w=''; fi"
-    GRAPHHDD="$GRAPHHDD \\
+    GRAPHHDD+=" \\
   DEF:hdd${UCOLIDXH}r_s=usage.rrd:hdd${UCOLIDXH}r:AVERAGE \\
   DEF:hdd${UCOLIDXH}w_s=usage.rrd:hdd${UCOLIDXH}w:AVERAGE \\
   CDEF:hdd${UCOLIDXH}r=hdd${UCOLIDXH}r_s,512,* \\
   CDEF:hdd${UCOLIDXH}w=hdd${UCOLIDXH}w_s,512,* \\
   LINE2:hdd${UCOLIDXH}r$(getOne $UCOLIDXH $COLORS):\"${label} read\" \\
   LINE2:hdd${UCOLIDXH}w$(getOne $((UCOLIDXH+1)) $COLORS):\"${label} write\" " 
-    UPDATEUSAGEC="$UPDATEUSAGEC:\${VAL_H${UCOLIDXH}r:-U}:\${VAL_H${UCOLIDXH}w:-U}"
+    UPDATEUSAGEC+=":\${VAL_H${UCOLIDXH}r:-U}:\${VAL_H${UCOLIDXH}w:-U}"
     UCOLIDXH=$((UCOLIDXH+2)) ;
 }
 
@@ -85,20 +85,20 @@ function usage_add_net() {
         label=$net
     fi
 
-    CREATEUSAGE="$CREATEUSAGE
+    CREATEUSAGE+="
   DS:net${UCOLIDXN}r:COUNTER:$HEARTBEAT:U:U
   DS:net${UCOLIDXN}w:COUNTER:$HEARTBEAT:U:U"
-    UPDATEUSAGE="$UPDATEUSAGE
+    UPDATEUSAGE+="
     VAL_N${UCOLIDXN}r=\`${BINDIR}/netstats ${net} RX\`
     if [ \$? -ne 0 ]; then VAL_N${UCOLIDXH}r=''; fi
     VAL_N${UCOLIDXN}w=\`${BINDIR}/netstats ${net} TX\`
     if [ \$? -ne 0 ]; then VAL_N${UCOLIDXH}w=''; fi"
-    GRAPHNET="$GRAPHNET \\
+    GRAPHNET+=" \\
   DEF:n${UCOLIDXN}r=usage.rrd:net${UCOLIDXN}r:AVERAGE \\
   DEF:n${UCOLIDXN}w=usage.rrd:net${UCOLIDXN}w:AVERAGE \\
   LINE2:n${UCOLIDXN}r`getOne $UCOLIDXN $COLORS`:\"${label} recv\" \\
   LINE2:n${UCOLIDXN}w`getOne $((UCOLIDXN+1)) $COLORS`:\"${label} send\" " ;
-    UPDATEUSAGEC="$UPDATEUSAGEC:\${VAL_N${UCOLIDXN}r:-U}:\${VAL_N${UCOLIDXN}w:-U}"
+    UPDATEUSAGEC+=":\${VAL_N${UCOLIDXN}r:-U}:\${VAL_N${UCOLIDXN}w:-U}"
     UCOLIDXN=$((UCOLIDXN+2))
 }
 
@@ -131,7 +131,7 @@ function health_add_hdd() {
         label=$disk
     fi
 
-    UPDATEHEALTH="$UPDATEHEALTH
+    UPDATEHEALTH+="
     TEMP_${TCOLIDX}=\`${BINDIR}/hddtemp /dev/${disk}\`
     if [ \$? -ne 0 ]; then TEMP_${TCOLIDX}=''; fi"
 }
@@ -145,7 +145,7 @@ function health_add_sensor() {
         label="$chip $sensor"
     fi
 
-    UPDATEHEALTH="$UPDATEHEALTH
+    UPDATEHEALTH+="
     TEMP_${TCOLIDX}=\`${BINDIR}/senstemp ${chip} ${sensor}\`
     if [ \$? -ne 0 ]; then TEMP_${TCOLIDX}=''; fi"
 }
@@ -171,10 +171,10 @@ for i in $HEALTHSTATS; do
             ;;
     esac
 
-    CREATEHEALTH="$CREATEHEALTH DS:T${TCOLIDX}:GAUGE:$HEARTBEAT:0:160"
+    CREATEHEALTH+=" DS:T${TCOLIDX}:GAUGE:$HEARTBEAT:0:160"
 
 
-    GRAPHTEMP="$GRAPHTEMP \\
+    GRAPHTEMP+=" \\
     DEF:T${TCOLIDX}=health.rrd:T${TCOLIDX}:AVERAGE \\
     LINE2:T${TCOLIDX}`getOne $TCOLIDX $COLORS`:\"${label}\" "
     UPDATEHEALTHC="$UPDATEHEALTHC:\${TEMP_${TCOLIDX}:-U}"
@@ -183,21 +183,21 @@ for i in $HEALTHSTATS; do
 
 done
 # assemble commands
-CREATEUSAGE="$CREATEUSAGE DS:cpu:GAUGE:$HEARTBEAT:0:U DS:load:GAUGE:$HEARTBEAT:0:U
+CREATEUSAGE+=" DS:cpu:GAUGE:$HEARTBEAT:0:U DS:load:GAUGE:$HEARTBEAT:0:U
 RRA:AVERAGE:0.5:1:2880
 RRA:MAX:0.5:1:2880
 RRA:AVERAGE:0.5:30:672
 RRA:MAX:0.5:30:672
 RRA:AVERAGE:0.5:120:4380
 RRA:MAX:0.5:120:4380"
-CREATEHEALTH="$CREATEHEALTH RRA:AVERAGE:0.5:1:2880
+CREATEHEALTH+=" RRA:AVERAGE:0.5:1:2880
 RRA:MAX:0.5:1:2880
 RRA:AVERAGE:0.5:30:672
 RRA:MAX:0.5:30:672
 RRA:AVERAGE:0.5:120:4380
 RRA:MAX:0.5:120:4380"
-UPDATEUSAGEC="$UPDATEUSAGEC:\`${BINDIR}/cpustat 2 10\`:\`${BINDIR}/cpustat\`\""
-UPDATEHEALTHC="$UPDATEHEALTHC\""
+UPDATEUSAGEC+=":\`${BINDIR}/cpustat 2 10\`:\`${BINDIR}/cpustat\`\""
+UPDATEHEALTHC+="\""
 
 $CREATEUSAGE && echo "RRD file $USAGEFILE successfully created"
 $CREATEHEALTH && echo "RRD file $HEALTHFILE successfully created"
