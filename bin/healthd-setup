@@ -304,7 +304,7 @@ function dograph {
     \$1g \$1-long 50d 1000 120 -Eg
 }
 
-cd ${HEALTHDIR}
+cd ${HEALTH_DIR}
 
 dograph temp > /dev/null
 dograph hdd > /dev/null
