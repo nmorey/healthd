@@ -96,8 +96,18 @@ for i in $HEALTH_STATS; do
             SENSORS_HIGH=$(sensors "$chip" | grep "$sensor" | sed -e 's/.*high = +\?\([0-9]\+\)\.[0-9]\+°C.*/\1/')
             case $SENSORS_HIGH in
 	        ''|*[!0-9]*)
-		    # Wrong format. Ignore this value and use CPU_TEMP_LIMIT
-		    SENSORS_HIGH=$CPU_TEMP_LIMIT;;
+		    # Wrong format. Try the crit temp
+                    SENSORS_CRIT=$(sensors "$chip" | grep "$sensor" | sed -e 's/.*crit = +\?\([0-9]\+\)\.[0-9]\+°C.*/\1/')
+                    case $SENSORS_CRIT in
+	                ''|*[!0-9]*)
+		            # Wrong format. Use the sysconfig defined temps
+		            SENSORS_HIGH=$CPU_TEMP_LIMIT;;
+                        *)
+		            # Good number. Keep this one
+                            true
+                            SENSORS_HIGH=$SENSORS_CRIT
+		            ;;
+                    esac
                 *)
 		    # Good number. Keep this one
                     true
