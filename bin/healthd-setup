@@ -206,6 +206,10 @@ $CREATEHEALTH && echo "RRD file $HEALTHFILE successfully created"
 cat <<EOF > $UPDATE_SCRIPT
 #!/bin/sh
 
+# Try loading the built-in sleep implementation to avoid spawning a
+# new process every 15 seconds
+enable -f sleep sleep >/dev/null 2>&1
+
 while true; do
   start_time=\$(date +%s)
   { $UPDATEUSAGE
