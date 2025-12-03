@@ -21,106 +21,124 @@
 #
 
 if [ ! -f /etc/sysconfig/healthd ]; then
-	echo "Missing /etc/sysconfig/healthd"
-	exit 1
+    echo "Missing /etc/sysconfig/healthd"
+    exit 1
 fi
 . /etc/sysconfig/healthd
 
 if [ "$CPU_TEMP_LIMIT" == "" ]; then
-	echo "Error: CPU_TEMP_LIMIT is not set" >&2
-	exit 1
+    echo "Error: CPU_TEMP_LIMIT is not set" >&2
+    exit 1
 fi
 
 if [ "$DISK_TEMP_LIMIT" == "" ]; then
-	echo "Error: DISK_TEMP_LIMIT is not set" >&2
-	exit 1
+    echo "Error: DISK_TEMP_LIMIT is not set" >&2
+    exit 1
 fi
 
 DELAY=60
 ALARM_DELAY=600
-RRDFILE=$HEALTHDIR/health.rrd
+RRDFILE=$RRD_DIR/health.rrd
+
+function getOne() {
+    echo $2 | {
+        i=$1
+        while [ $i -gt 0 ] ; do i=$((i-1)) ; read -d \; ; done
+        echo $REPLY
+    }
+}
 
 alert()
 {
-  echo "Temperature alarm" >&2
-  echo "healthd-alert: Temperature alarm: $*" | wall
-  if [ "$ADMIN_EMAIL" != "" ]; then
-	  (
-		  echo "Temperature Alarm"
-		  echo "  CPU Limit = $CPU_LIMIT"
-		  echo "  Disk Limit = $DISK_LIMIT"
-		  echo "Date = $(date)  // $(date '+%s')"
-		  echo "Timestamp $LABELS"
-		  echo "$*"
-	  ) | mail -s "**** Hardware Health Warning on $(hostname) ****" $ADMIN_EMAIL
-  fi
+    echo "Temperature alarm" >&2
+    echo "healthd-alert: Temperature alarm: $*" | wall
+    if [ "$ADMIN_EMAIL" != "" ]; then
+	(
+	    echo "Temperature Alarm"
+	    echo "  CPU Limit = $CPU_LIMIT"
+	    echo "  Disk Limit = $DISK_LIMIT"
+	    echo "Date = $(date)  // $(date '+%s')"
+	    echo "Timestamp $LABELS"
+	    echo "$*"
+	) | mail -s "**** Hardware Health Warning on $(hostname) ****" $ADMIN_EMAIL
+    fi
 }
 
 alert_too_old()
 {
-  echo "RRD is too old. Something went wrong" >&2
+    echo "RRD is too old. Something went wrong" >&2
 
-  if [ "$ADMIN_EMAIL" != "" ]; then
-	  (
-		  echo "Date = $(date)  // $(date '+%s')"
-		  echo "Last RRD Update:"
-		  rrdtool lastupdate $RRDFILE
-	  ) | mail -s '**** Hardware Health Warning on $(hostname) - RRD Out-of-date ****' $ADMIN_EMAIL
-  fi
+    if [ "$ADMIN_EMAIL" != "" ]; then
+	(
+	    echo "Date = $(date)  // $(date '+%s')"
+	    echo "Last RRD Update:"
+	    rrdtool lastupdate $RRDFILE
+	) | mail -s "**** Hardware Health Warning on $(hostname) - RRD Out-of-date ****" $ADMIN_EMAIL
+    fi
 
 }
 # Try loading the built-in sleep implementation to avoid spawning a
 # new process every 15 seconds
 enable -f sleep sleep >/dev/null 2>&1
 
-
-LABELS=$(rrdtool lastupdate $RRDFILE | head -n 1)
-read -r -a array <<< "$LABELS"
-
-# Try to get the max CPU temp from sensors
-SENSORS_HIGH_TEMP=`sensors | grep Core | sed -e 's/.*high = +\?\([0-9]\+\)\.[0-9]\+°C.*/\1/' | \
-						   sort -n -u | head -n 1`
-case $SENSORS_HIGH_TEMP in
-	''|*[!0-9]*)
-		# Wrong format. Ignore this value
-		false;;
-    *)
-		# Good number. Override sysconfig default with it
-		CPU_TEMP_LIMIT=$SENSORS_HIGH_TEMP
-		echo "Using CPU specific value for temperature alert: ${SENSORS_HIGH_TEMP}"
-		;;
-esac
+# Fill in array with limit temps
+declare -a limits=()
+for i in $HEALTH_STATS; do
+    DEVTYPE=$(getOne 1 "${i}")
+    LIMIT=99
+    case "$DEVTYPE" in
+        "hd")
+            limits+=("$DISK_TEMP_LIMIT")
+            ;;
+        "sensor")
+            chip=$(getOne 2 "${i}" | sed -e 's/+/ /g')
+            sensor=$(getOne 3 "${i}" | sed -e 's/+/ /g')
+            SENSORS_HIGH=$(sensors "$chip" | grep "$sensor" | sed -e 's/.*high = +\?\([0-9]\+\)\.[0-9]\+°C.*/\1/')
+            case $SENSORS_HIGH in
+	        ''|*[!0-9]*)
+		    # Wrong format. Ignore this value and use CPU_TEMP_LIMIT
+		    SENSORS_HIGH=$CPU_TEMP_LIMIT;;
+                *)
+		    # Good number. Keep this one
+		    CPU_TEMP_LIMIT=$SENSORS_HIGH_TEMP
+		    ;;
+            esac
+            limits+=("$SENSORS_HIGH")
+            ;;
+        *)
+            echo "Unrecognized device format '$i'" >&2
+            exit 1
+            ;;
+    esac
+done
 
 while true
 do
- i=0
- temps=$(rrdtool lastupdate $RRDFILE | tail -n 1 | sed -e 's/://g')
- set -- $temps
- ts=$1
- if [ $(expr $ts + $DELAY + $DELAY + $DELAY) -lt $(date '+%s') ]; then
+    i=0
+    temps=$(rrdtool lastupdate $RRDFILE | tail -n 1 | sed -e 's/://g')
+    set -- $temps
+    ts=$1
+    if [ $(expr $ts + $DELAY + $DELAY + $DELAY) -lt $(date '+%s') ]; then
 	alert_too_old
         sleep $DELAY
 	continue
- fi
+    fi
 
- shift
- while [ $# -ne 0 ]; do
-        LIMIT=99
-	if [[ "${array[$i]}" =~ "CPU" ]] || [[ "${array[$i]}" =~ "Core" ]]; then
-	  LIMIT=$CPU_TEMP_LIMIT
-	elif [[ "${array[$i]}" =~ "sd" ]] || [[ "${array[$i]}" =~ "HDD" ]]; then
-	  LIMIT=$DISK_TEMP_LIMIT
-        fi
+    shift
+    while [ $# -ne 0 ]; do
+        LIMIT=${limits[$i]}
+	sane_temp=${1//\.[0-9]*/}
 
-	sane_temp=$(echo $1 | sed -e 's/\.[0-9]\+//')
-
-	if [ $sane_temp -ge $LIMIT ]; then
-		alert $temps
-		sleep $ALARM_DELAY
-		break
+        if [ "$sane_temp" == "U" ]; then
+            # Unknown temp, skip
+            true
+	elif [ $sane_temp -ge $LIMIT ]; then
+	    alert $temps
+	    sleep $ALARM_DELAY
+	    break
 	fi
 	shift
-	i=$(expr $i + 1)
- done
- sleep $DELAY
+	i=$((i+1))
+    done
+    sleep $DELAY
 done
