@@ -46,7 +46,7 @@ Server monitoring and alert daemon.
 %prep
 %setup -q -n  %{name}-%{version}%{git_ver}
 
-%define dir_flags PREFIX=%{_prefix} BINDIR=%{_bindir} LIBEXEC=%{_libexecdir} SYSCONF_TPL_DIR=%{_fillupdir} SHAREDIR=%{_datarootdir} SYSTEMD=%{_unitdir} SHAREDSTATEDIR=%{_sharedstatedir}
+%define dir_flags PREFIX=%{_prefix} BINDIR=%{_bindir} LIBEXEC=%{_libexecdir} SYSCONF_TPL_DIR=%{_fillupdir} SHAREDIR=%{_datarootdir} SYSTEMD=%{_unitdir} SHAREDSTATEDIR=%{_sharedstatedir} SYSCONF_DIR=%{_sysconfdir}/sysconfig
 
 %build
 make all %{dir_flags}
