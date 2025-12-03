@@ -108,6 +108,7 @@ for i in $HEALTH_STATS; do
                             SENSORS_HIGH=$SENSORS_CRIT
 		            ;;
                     esac
+                    ;;
                 *)
 		    # Good number. Keep this one
                     true
