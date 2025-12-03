@@ -100,7 +100,7 @@ for i in $HEALTH_STATS; do
 		    SENSORS_HIGH=$CPU_TEMP_LIMIT;;
                 *)
 		    # Good number. Keep this one
-		    CPU_TEMP_LIMIT=$SENSORS_HIGH_TEMP
+                    true
 		    ;;
             esac
             limits+=("$SENSORS_HIGH")
