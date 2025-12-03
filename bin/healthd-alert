@@ -71,7 +71,7 @@ alert_too_old()
 }
 # Try loading the built-in sleep implementation to avoid spawning a
 # new process every 15 seconds
-enable -f sleep.so sleep >/dev/null 2>&1
+enable -f sleep sleep >/dev/null 2>&1
 
 
 LABELS=$(rrdtool lastupdate $RRDFILE | head -n 1)
