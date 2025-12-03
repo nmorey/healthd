@@ -3,7 +3,7 @@
 USAGE_STATS=""
 
 # Temperature values: internal name;sensor name;description+for+graph
-# example: HEALTH_STATS="sensors;chip+name;sensors+string;Label+for+graph hd;sda;HDD0"
+# example: HEALTH_STATS="sensor;chip+name;sensor+string;Label+for+graph hd;sda;HDD0"
 # Note: hd devices support any device path without the top /dev like disk/by-id/XXXX
 HEALTH_STATS=""
 
