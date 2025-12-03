@@ -103,7 +103,7 @@ function usage_add_net() {
 }
 
 # usage
-for i in $USAGESTATS; do
+for i in $USAGE_STATS; do
     DEVTYPE=$(getOne 1 "${i}")
     case "$DEVTYPE" in
         "hd")
@@ -151,7 +151,7 @@ function health_add_sensor() {
 }
 # health
 echo "HEALTH"
-for i in $HEALTHSTATS; do
+for i in $HEALTH_STATS; do
     DEVTYPE=$(getOne 1 "${i}")
     case "$DEVTYPE" in
         "hd")

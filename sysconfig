@@ -1,11 +1,11 @@
 # Data transfer counters: entries like hda, sda, md0, eth0
-# example: USAGESTATS="hd;/dev/disk/by-id/myID;Label+for+graph hd;sda net;ifname;Label+for+if"
-USAGESTATS=""
+# example: USAGE_STATS="hd;/dev/disk/by-id/myID;Label+for+graph hd;sda net;ifname;Label+for+if"
+USAGE_STATS=""
 
 # Temperature values: internal name;sensor name;description+for+graph
-# example: HEALTHSTATS="sensors;chip+name;sensors+string;Label+for+graph hd;sda;HDD0"
+# example: HEALTH_STATS="sensors;chip+name;sensors+string;Label+for+graph hd;sda;HDD0"
 # Note: hd devices support any device path without the top /dev like disk/by-id/XXXX
-HEALTHSTATS=""
+HEALTH_STATS=""
 
 # Raid to monitor
 # example: MDSTATS="md1"
