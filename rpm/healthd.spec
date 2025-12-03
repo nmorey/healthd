@@ -34,6 +34,8 @@ Requires:       rrdtool
 Requires:       sed
 Requires:       smartmontools
 Requires:       sysstat
+# For builtin sleep function
+Recommends:     bash-loadables
 
 %description
 Server monitoring and alert daemon.
