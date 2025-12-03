@@ -37,7 +37,7 @@ RRD_DIR="@SHAREDSTATEDIR@/healthd/rrd/"
 CPU_TEMP_LIMIT=75
 
 # Max disk temperature
-DISK_TEMP_LIMIT=60
+DISK_TEMP_LIMIT=50
 
 # Refresh period
 REFRESH_PERIOD=60
